@@ -1,0 +1,209 @@
+alama linux apache postfix dovecot TLS設定（自己証明書）
+
+1. Apacheの自己証明書設定
+1.1. 自己証明書を生成する
+
+まず、自己証明書と秘密鍵を生成する。以下のコマンドで自己証明書を作成
+
+sudo mkdir -p /etc/ssl/certs /etc/ssl/private
+cd /etc/ssl/certs
+
+次に、自己証明書と秘密鍵を生成。
+sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/apache.key -out /etc/ssl/certs/apache.crt -days 365 -nodes
+（コマンド実行中に、証明書に必要な情報（国名、組織名、ドメイン名など）を入力
+
+1.2. Apacheの設定ファイルを編集
+
+次に、ApacheのSSL設定を行う。/etc/httpd/conf.d/ssl.confを編集する
+
+sudo vi /etc/httpd/conf.d/ssl.conf
+
+以下の行を確認し、自己証明書のパスを設定
+
+SSLCertificateFile /etc/ssl/certs/apache.crt
+SSLCertificateKeyFile /etc/ssl/private/apache.key
+
+以下追記設定(最終行に追記）
+<VirtualHost *:80>
+    ServerName www.example1.jp
+    Redirect permanent / https://www.example1.jp/
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName next.example1.jp
+    Redirect permanent / https://next.example1.jp/
+</VirtualHost>
+
+
+Vritualhost設定 (ホスト名はNextcloudの場合はWordpressの部分を読み替えて設定。ドキュメントルートの位置も注意！）
+vi /etc/httpd/conf.d/vhost.conf
+
+# 新規作成
+# オリジナルのドメインの設定
+
+<VirtualHost *:80>
+    DocumentRoot /var/www/html
+    ServerName www.example2.jp
+</VirtualHost>
+
+<VirtualHost *:80>
+    DocumentRoot /var/www/wordpress
+    ServerName word.example2.jp
+    ServerAdmin root@example2.jp
+    ErrorLog logs/wordpress-error_log
+    CustomLog logs/wordpress-access_log combined
+</VirtualHost>
+
+<Directory "/var/www/wordpress">
+    Options FollowSymLinks
+    AllowOverride All
+</Directory>
+
+# www.example2.jp 用の HTTPS設定
+<VirtualHost *:443>
+    DocumentRoot /var/www/html
+    ServerName www.example2.jp
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/certs/apache.crt
+    SSLCertificateKeyFile /etc/ssl/private/apache.key
+</VirtualHost>
+
+# word.example2.jp 用の HTTPS設定
+<VirtualHost *:443>
+    DocumentRoot /var/www/wordpress
+    ServerName word.example2.jp
+    ServerAdmin root@example1.jp
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/certs/apache.crt
+    SSLCertificateKeyFile /etc/ssl/private/apache.key
+
+    ErrorLog logs/wordpress-error_log
+    CustomLog logs/wordpress-access_log combined
+</VirtualHost>
+
+
+
+1.3. Apacheの再起動
+
+設定が完了したら、Apacheを再起動して変更を反映させる
+
+sudo systemctl restart httpd
+
+1.4. SSLを強制する設定（オプション）
+
+vhost.confの追加設定
+
+# www.example1.jp 用の HTTPS設定
+<VirtualHost *:443>
+    DocumentRoot /var/www/html
+    ServerName www.example1.jp
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/certs/apache.crt
+    SSLCertificateKeyFile /etc/ssl/private/apache.key
+</VirtualHost>
+
+# next.example1.jp 用の HTTPS設定
+<VirtualHost *:443>
+    DocumentRoot /var/www/html/nextcloud
+    ServerName next.example1.jp
+    ServerAdmin root@example1.jp
+    SSLEngine on
+    SSLCertificateFile /etc/ssl/certs/apache.crt
+    SSLCertificateKeyFile /etc/ssl/private/apache.key
+
+    ErrorLog logs/nextcloud-error_log
+    CustomLog logs/nextcloud-access_log combined
+</VirtualHost>
+
+nextcloud用 HSTSの設定
+新規でファイルを作成
+vi /etc/httpd/conf.d/nextcloud.conf
+以下を記載
+Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains; preload"
+
+
+
+これで、ApacheのSSLが有効になる
+
+
+
+2. Postfixの自己証明書設定
+2.1. Postfixの設定ファイルを編集
+
+Postfixで自己証明書を使用するためには、/etc/postfix/main.cfを編集する
+
+sudo vi /etc/postfix/main.cf
+以下の設定を追加または変更
+
+# TLS設定
+smtp_tls_security_level = may
+
+smtpd_use_tls = yes
+smtp_tls_loglevel = 1
+smtpd_tls_cert_file = /etc/ssl/certs/apache.crt
+smtpd_tls_key_file = /etc/ssl/private/apache.key
+smtpd_tls_CAfile = /etc/ssl/certs/apache.crt  # CA証明書を自己証明書に設定
+2.2. Postfixの再起動
+
+設定を反映するために、Postfixを再起動します。
+
+sudo systemctl restart postfix
+2.3. PostfixのSSL/TLS接続をテスト
+
+PostfixがSSL/TLSを正しく使っているか確認するために、opensslを使用してテストします。
+
+openssl s_client -connect yourdomain.com:25 -starttls smtp
+3. Dovecotの自己証明書設定
+3.1. Dovecotの設定ファイルを編集
+
+DovecotでSSLを有効にするためには、/etc/dovecot/dovecot.confまたは/etc/dovecot/conf.d/10-ssl.confを編集します。
+
+sudo vi /etc/dovecot/conf.d/10-ssl.conf
+以下の設定を追加または確認します。
+
+ssl = required
+ssl_cert = </etc/ssl/certs/apache.crt
+ssl_key = </etc/ssl/private/apache.key
+ssl_ca_cert = </etc/ssl/certs/apache.crt  # 自己証明書をCA証明書として設定
+3.2. Dovecotの再起動
+
+設定を反映するために、Dovecotを再起動します。
+
+sudo systemctl restart dovecot
+3.3. DovecotのSSL/TLS接続をテスト
+
+DovecotがSSL/TLSで正しく動作しているかを確認するために、opensslを使ってテストします。
+
+openssl s_client -connect yourdomain.com:993
+まとめ
+これで、AlmaLinux 9上でApache、Postfix、Dovecotに自己証明書を使ったSSL設定が完了しました。自己証明書は簡単に生成できますが、信頼された証明機関（CA）から発行された証明書とは異なり、警告が表示されることがある点に注意してください。
+
+Apache: SSLでHTTPSを有効にし、自己証明書を設定
+Postfix: TLSを使ってメールの暗号化通信を有効にし、自己証明書を使用
+Dovecot: SSL/TLSを使用してメール受信時の暗号化通信を有効にし、自己証明書を使用
+設定後は、各サービスの動作確認を行ってください。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
