@@ -18,7 +18,7 @@ services:
       - NET_ADMIN
     volumes:
       - ./config/r1:/etc/frr
-    command: /bin/bash -c "service frr start; tail -f /dev/null"
+    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
 
   r2:
     image: frrouting/frr:latest
@@ -30,7 +30,7 @@ services:
       - NET_ADMIN
     volumes:
       - ./config/r2:/etc/frr
-    command: /bin/bash -c "service frr start; tail -f /dev/null"
+    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
 
   r3:
     image: frrouting/frr:latest
@@ -42,7 +42,7 @@ services:
       - NET_ADMIN
     volumes:
       - ./config/r3:/etc/frr
-    command: /bin/bash -c "service frr start; tail -f /dev/null"
+    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
 
   r4:
     image: frrouting/frr:latest
@@ -54,7 +54,7 @@ services:
       - NET_ADMIN
     volumes:
       - ./config/r4:/etc/frr
-    command: /bin/bash -c "service frr start; tail -f /dev/null"
+    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
 
   r5:
     image: frrouting/frr:latest
@@ -66,7 +66,7 @@ services:
       - NET_ADMIN
     volumes:
       - ./config/r5:/etc/frr
-    command: /bin/bash -c "service frr start; tail -f /dev/null"
+    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
 
 networks:
   net:
