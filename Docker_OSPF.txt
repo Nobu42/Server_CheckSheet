@@ -1,10 +1,10 @@
-DockerとFRRを使ってOSPFの勉強をするための検証用の5台分のコンテナを構成するDocker Composeの設定ファイルを作成
+DockerとFRRを使ってOSPFの勉強をするための検証用の5台分のコンテナを構成するDocker Composeのファイル
 
-FRRを利用するためのDockerイメージを作成し、5台分のネットワークを構成するためのDocker Composeファイルを作成
-
+FRRを利用するためのDockerイメージを作成し、5台分のネットワークを構成するためのDocker Composeファイルを作成する。
 OSPFの設定を行うため、DockerコンテナにはFRRがインストールされている必要がある
 
 1. Docker Composeファイル例
+
 version: '3.8'
 
 services:
@@ -74,8 +74,9 @@ networks:
     ipam:
       config:
         - subnet: 192.168.1.0/24
+
 2. 各コンテナの設定
-FRRの設定は各コンテナ内に保存される./config/rXディレクトリ（r1, r2, r3, r4, r5）に配置します。
+FRRの設定は各コンテナ内に保存される./config/rXディレクトリ（r1, r2, r3, r4, r5）に配置する。
 ネットワーク設定：
 各コンテナに個別のIPアドレス（192.168.1.1から192.168.1.5まで）を割り当てる。
 各コンテナは同じネットワークnetに接続される
