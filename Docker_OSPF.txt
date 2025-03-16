@@ -1,6 +1,8 @@
-DockerとFRRを使ってOSPFの勉強をするための検証用の5台分のコンテナを構成するDocker Composeの設定ファイルを作成するためには、以下の内容を参考にすることができます。今回はFRRを利用したOSPFの設定を行うため、DockerコンテナにはFRRがインストールされている必要があります。
+DockerとFRRを使ってOSPFの勉強をするための検証用の5台分のコンテナを構成するDocker Composeの設定ファイルを作成
 
-まず、FRRを利用するためのDockerイメージを作成し、5台分のネットワークを構成するためのDocker Composeファイルを作成します。
+FRRを利用するためのDockerイメージを作成し、5台分のネットワークを構成するためのDocker Composeファイルを作成
+
+OSPFの設定を行うため、DockerコンテナにはFRRがインストールされている必要がある
 
 1. Docker Composeファイル例
 version: '3.8'
@@ -75,10 +77,10 @@ networks:
 2. 各コンテナの設定
 FRRの設定は各コンテナ内に保存される./config/rXディレクトリ（r1, r2, r3, r4, r5）に配置します。
 ネットワーク設定：
-各コンテナに個別のIPアドレス（192.168.1.1から192.168.1.5まで）を割り当てます。
-各コンテナは同じネットワークnetに接続されます。
+各コンテナに個別のIPアドレス（192.168.1.1から192.168.1.5まで）を割り当てる。
+各コンテナは同じネットワークnetに接続される
 3. OSPF設定ファイルの例
-次に、各コンテナでOSPFを設定するために必要なfrr.conf（FRRの設定ファイル）を準備します。以下に基本的なOSPF設定の例を示します。
+次に、各コンテナでOSPFを設定するために必要なfrr.conf（FRRの設定ファイル）を準備する。
 
 例: r1のOSPF設定（./config/r1/frr.conf）
 
@@ -100,15 +102,15 @@ log syslog informational
 router ospf
  ospf router-id 2.2.2.2
  network 192.168.1.0/24 area 0.0.0.0
-同様に、r3, r4, r5にもそれぞれ異なるrouter-idと適切なnetwork設定を行います。
+同様に、r3, r4, r5にもそれぞれ異なるrouter-idと適切なnetwork設定を行う。
 
 4. 設定後の手順
 Docker Composeでコンテナを起動:
 docker-compose up -d
 各コンテナにログイン:
 docker exec -it r1 bash
-FRRサービスを開始: 各コンテナでFRRサービスを手動で開始するか、Dockerコンテナの起動時に自動的に開始するように設定しています（command: /bin/bash -c "service frr start; tail -f /dev/null"）。
-OSPFが正しく動作しているか確認: OSPFが正しく動作しているかを確認するには、以下のコマンドを使用します。
+FRRサービスを開始: 各コンテナでFRRサービスを手動で開始するか、Dockerコンテナの起動時に自動的に開始するように設定している（command: /bin/bash -c "service frr start; tail -f /dev/null"）。
+OSPFが正しく動作しているか確認: OSPFが正しく動作しているかを確認するには、以下のコマンドを使用する
 show ip ospf neighbor
 show ip ospf
-この構成で、5台のルータ間でOSPFを動作させることができます。各ルータでOSPFを設定し、隣接関係が確立されていることを確認できます。
+この構成で、5台のルータ間でOSPFを動作させることができる。各ルータでOSPFを設定し、隣接関係が確立されていることを確認できる
