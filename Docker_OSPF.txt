@@ -5,75 +5,76 @@ OSPFの設定を行うため、DockerコンテナにはFRRがインストール�
 
 1. Docker Composeファイル例
 
-version: '3.8'
-
+version: "3.8"
 services:
   r1:
-    image: frrouting/frr:latest
     container_name: r1
+    image: sphalerite1313/frr  # ここを変更
     networks:
-      net:
-        ipv4_address: 192.168.1.1
-    cap_add:
-      - NET_ADMIN
+      - ospf_net
+    environment:
+      - FRR_ROUTER_ID=1
+      - FRR_OSPF_ROUTER_ID=1
     volumes:
       - ./config/r1:/etc/frr
-    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
+    command: /usr/bin/frr -d
+    restart: always
 
   r2:
-    image: frrouting/frr:latest
     container_name: r2
+    image: sphalerite1313/frr  # ここを変更
     networks:
-      net:
-        ipv4_address: 192.168.1.2
-    cap_add:
-      - NET_ADMIN
+      - ospf_net
+    environment:
+      - FRR_ROUTER_ID=2
+      - FRR_OSPF_ROUTER_ID=2
     volumes:
       - ./config/r2:/etc/frr
-    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
+    command: /usr/bin/frr -d
+    restart: always
 
   r3:
-    image: frrouting/frr:latest
     container_name: r3
+    image: sphalerite1313/frr  # ここを変更
     networks:
-      net:
-        ipv4_address: 192.168.1.3
-    cap_add:
-      - NET_ADMIN
+      - ospf_net
+    environment:
+      - FRR_ROUTER_ID=3
+      - FRR_OSPF_ROUTER_ID=3
     volumes:
       - ./config/r3:/etc/frr
-    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
+    command: /usr/bin/frr -d
+    restart: always
 
   r4:
-    image: frrouting/frr:latest
     container_name: r4
+    image: sphalerite1313/frr  # ここを変更
     networks:
-      net:
-        ipv4_address: 192.168.1.4
-    cap_add:
-      - NET_ADMIN
+      - ospf_net
+    environment:
+      - FRR_ROUTER_ID=4
+      - FRR_OSPF_ROUTER_ID=4
     volumes:
       - ./config/r4:/etc/frr
-    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
+    command: /usr/bin/frr -d
+    restart: always
 
   r5:
-    image: frrouting/frr:latest
     container_name: r5
+    image: sphalerite1313/frr  # ここを変更
     networks:
-      net:
-        ipv4_address: 192.168.1.5
-    cap_add:
-      - NET_ADMIN
+      - ospf_net
+    environment:
+      - FRR_ROUTER_ID=5
+      - FRR_OSPF_ROUTER_ID=5
     volumes:
       - ./config/r5:/etc/frr
-    command: /bin/bash -c "/usr/lib/frr/frr; tail -f /dev/null"
+    command: /usr/bin/frr -d
+    restart: always
 
 networks:
-  net:
+  ospf_net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 192.168.1.0/24
 
 2. 各コンテナの設定
 FRRの設定は各コンテナ内に保存される./config/rXディレクトリ（r1, r2, r3, r4, r5）に配置する。
