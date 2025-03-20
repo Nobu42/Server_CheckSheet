@@ -1,3 +1,4 @@
+# まだ動きません
 DockerとFRRを使ってOSPFの勉強をするための検証用の5台分のコンテナを構成するDocker Composeのファイル
 
 FRRを利用するためのDockerイメージを作成し、5台分のネットワークを構成するためのDocker Composeファイルを作成する。
