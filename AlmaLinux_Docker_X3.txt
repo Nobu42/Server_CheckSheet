@@ -1,0 +1,57 @@
+Alma3台検証Docker
+
+services:
+  host0:
+    container_name: host0
+    image: almalinux:8
+    hostname: host0.com
+    networks:
+      my_network:
+        ipv4_address: 192.168.56.100
+    volumes:
+      - bind_data:/etc/bind
+    command: bind-chroot
+
+  host1:
+    container_name: host1
+    image: almalinux:8
+    hostname: host1.example1.com
+    networks:
+      my_network:
+        ipv4_address: 192.168.56.101
+    volumes:
+      - host1_data:/etc/hosts
+      - host1_web_data:/var/www
+      - host1_mail_data:/var/mail
+    command: >
+      bash -c "dnf install -y bind-chroot httpd dovecot postfix cyrus-sasl s-nail python3 php8.1 mariadb-server"
+
+  host2:
+    container_name: host2
+    image: almalinux:8
+    hostname: host2.example2.com
+    networks:
+      my_network:
+        ipv4_address: 192.168.56.102
+    volumes:
+      - host2_data:/etc/hosts
+      - host2_web_data:/var/www
+      - host2_mail_data:/var/mail
+    command: >
+      bash -c "dnf install -y bind-chroot httpd dovecot postfix cyrus-sasl s-nail python3 php8.1 mariadb-server"
+
+networks:
+  my_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.56.0/24
+
+volumes:
+  bind_data:
+  host1_data:
+  host1_web_data:
+  host1_mail_data:
+  host2_data:
+  host2_web_data:
+  host2_mail_data:
