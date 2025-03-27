@@ -1,4 +1,11 @@
-Alma3台検証Docker
+AlmaLinux　3台検証Docker
+
+host0 com コンテンツサーバ
+host1.example1.com コンテンツサーバ
+host2.example2.com コンテンツサーバ
+
+
+[DockerCompose]
 
 services:
   host0:
