@@ -1,12 +1,187 @@
 [DNS]
 $ sudo dnf -y install bind bind-chroot
 
+サブドメイン
+$ sudo vi /etc/named.conf
+// named.conf
+//
+// Provided by Red Hat bind package to configure the ISC BIND named(8) DNS
+// server as a caching only nameserver (as a localhost DNS resolver only).
+//
+// See /usr/share/doc/bind*/sample/ for example named configuration files.
+//
+
+options {
+	listen-on port 53 { 127.0.0.1; 192.168.56.101; };
+	listen-on-v6 port 53 { ::1; };
+	directory 	"/var/named";
+	dump-file 	"/var/named/data/cache_dump.db";
+	statistics-file "/var/named/data/named_stats.txt";
+	memstatistics-file "/var/named/data/named_mem_stats.txt";
+	secroots-file	"/var/named/data/named.secroots";
+	recursing-file	"/var/named/data/named.recursing";
+	allow-query     { any; };
+
+	/* 
+	 - If you are building an AUTHORITATIVE DNS server, do NOT enable recursion.
+	 - If you are building a RECURSIVE (caching) DNS server, you need to enable 
+	   recursion. 
+	 - If your recursive DNS server has a public IP address, you MUST enable access 
+	   control to limit queries to your legitimate users. Failing to do so will
+	   cause your server to become part of large scale DNS amplification 
+	   attacks. Implementing BCP38 within your network would greatly
+	   reduce such attack surface 
+	*/
+	recursion no;
+
+	dnssec-validation yes;
+
+	managed-keys-directory "/var/named/dynamic";
+	geoip-directory "/usr/share/GeoIP";
+
+	pid-file "/run/named/named.pid";
+	session-keyfile "/run/named/session.key";
+
+	/* https://fedoraproject.org/wiki/Changes/CryptoPolicy */
+	include "/etc/crypto-policies/back-ends/bind.config";
+};
+
+logging {
+        channel default_debug {
+                file "data/named.run";
+                severity dynamic;
+        };
+};
+
+zone "." IN {
+	type hint;
+	file "named.ca";
+};
+
+zone "example1.com" IN {
+		type master;
+		file "example1.com.zone";
+		allow-update { none; };
+};
+
+include "/etc/named.rfc1912.zones";
+include "/etc/named.root.key";
+
+サブドメイン・ゾーンファイル
+$TTL 3H
+$ORIGIN	example1.com.
+@	IN SOA	host1 root (
+					2025032001	; serial
+					1D	; refresh
+					1H	; retry
+					1W	; expire
+					3H )	; minimum
+	NS		host1.example1.com.
+	MX 10	mail.example1.com.	
+
+host1	A	192.168.56.101
+www		A	192.168.56.101
+mail	A	192.168.56.101
+next	A	192.168.56.101  # nextcloud
+word	A	192.168.56.101  # wordpress
+
+comドメインコンテンツサーバー
+vi /etc/named.conf
+
+//
+// named.conf
+//
+// Provided by Red Hat bind package to configure the ISC BIND named(8) DNS
+// server as a caching only nameserver (as a localhost DNS resolver only).
+//
+// See /usr/share/doc/bind*/sample/ for example named configuration files.
+//
+
+options {
+	listen-on port 53 { 127.0.0.1; 192.168.56.100; };
+	listen-on-v6 port 53 { ::1; };
+	directory 	"/var/named";
+	dump-file 	"/var/named/data/cache_dump.db";
+	statistics-file "/var/named/data/named_stats.txt";
+	memstatistics-file "/var/named/data/named_mem_stats.txt";
+	secroots-file	"/var/named/data/named.secroots";
+	recursing-file	"/var/named/data/named.recursing";
+	allow-query     { any; };
+
+	/* 
+	 - If you are building an AUTHORITATIVE DNS server, do NOT enable recursion.
+	 - If you are building a RECURSIVE (caching) DNS server, you need to enable 
+	   recursion. 
+	 - If your recursive DNS server has a public IP address, you MUST enable access 
+	   control to limit queries to your legitimate users. Failing to do so will
+	   cause your server to become part of large scale DNS amplification 
+	   attacks. Implementing BCP38 within your network would greatly
+	   reduce such attack surface 
+	*/
+	recursion yes;  # サブドメインとは違いここはyes
+
+	dnssec-validation yes;
+
+	managed-keys-directory "/var/named/dynamic";
+	geoip-directory "/usr/share/GeoIP";
+
+	pid-file "/run/named/named.pid";
+	session-keyfile "/run/named/session.key";
+
+	/* https://fedoraproject.org/wiki/Changes/CryptoPolicy */
+	include "/etc/crypto-policies/back-ends/bind.config";
+};
+
+logging {
+        channel default_debug {
+                file "data/named.run";
+                severity dynamic;
+        };
+};
+
+zone "." IN {
+	type hint;
+	file "named.ca";
+};
+
+zone "com" IN {
+		type master;
+		file "com.zone";
+		allow-update { none; };
+};
+
+include "/etc/named.rfc1912.zones";
+include "/etc/named.root.key";
+
+comドメインコンテンツサーバー・ゾーンファイル
+$TTL 3H
+$ORIGIN	jp.
+@	IN SOA	host0 root (
+					2025032001	; serial
+					1D	; refresh
+					1H	; retry
+					1W	; expire
+					3H )	; minimum
+
+     NS host0.com.
+example1.com. NS　host1.example1.com.
+example2.com. NS　host2.example2.com.
+host0　A　192.168.56.100
+host1.example1.com.　A　192.168.56.101
+host2.example2.com.　A　192.168.56.102
+
 $ named-checkconfig
 $ named-checkzone example1.com /var/named/example1.com.zone
+
+systemctl start named-chroot
+systemctl enable named-chroot
+
+firewall-cmd --add-service=dns --zone=public --permanent
+firewall-cmd --reload
+
 [WWW]
+ヴァーチャルホスト設定
  [root@www ~]# vi /etc/httpd/conf.d/vhost.conf
-# 新規作成
-# オリジナルのドメインの設定
 
 <VirtualHost *:80>
     DocumentRoot /var/www/html
