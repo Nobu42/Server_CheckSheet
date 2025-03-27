@@ -1,0 +1,139 @@
+[DNS]
+$ sudo dnf -y install bind bind-chroot
+
+$ named-checkconfig
+$ named-checkzone example1.com /var/named/example1.com.zone
+[WWW]
+ [root@www ~]# vi /etc/httpd/conf.d/vhost.conf
+# 新規作成
+# オリジナルのドメインの設定
+
+<VirtualHost *:80>
+    DocumentRoot /var/www/html
+    ServerName www.example1.com
+</VirtualHost>
+
+# バーチャルホストのドメインの設定(NextCloud)
+<VirtualHost *:80>
+    DocumentRoot /var/www/html/nextcloud
+    ServerName next.example1.com
+    ServerAdmin root@example1.com
+    ErrorLog logs/nextcloud-error_log
+    CustomLog logs/nextcloud-access_log combined
+</VirtualHost>
+
+<Directory "/var/www/html/nextcloud">
+    Options FollowSymLinks
+    AllowOverride All
+</Directory>
+
+[root@www ~]# mkdir /var/www/virtual.host
+[root@www ~]# chmod 755 /var/www/virtual.host
+[root@www ~]# systemctl reload httpd
+
+ユーザーディレクトリ設定
+[root@www ~]# vi /etc/httpd/conf.d/userdir.conf
+17行目 : コメント化
+# UserDir disabled
+
+24行目 : コメント解除
+UserDir public_html
+# 32,33行目
+
+<Directory "/home/*/public_html">
+    AllowOverride All     # 必要に応じて変更
+    Options None          # 必要に応じて変更
+    Require method GET POST OPTIONS
+</Directory>
+
+[root@www ~]# systemctl reload httpd
+
+[Mail]
+sudo dnf -y install postfix cyrus-sasl s-nail dovecot
+
+[PostFix]
+myhostname						mail.example1.jp
+mydomain						example1.jp
+inet_interfaces					localhost, 192.168.56.101
+mydestination					$mydomain
+
+最後尾に以下２行を追加
+smtpd_sasl_auth_enable			yes
+
+smtpd_recipient_restriction  	permit_mynetworks, permit_sasl_authenticated,
+                                reject_unauth_destination
+
+$ sudo postfix check
+$ sudo systemctl start postfix
+$ sudo systemctl enable postfix
+$ sudo firewall -cmd --add - service =smtp --zone= public --permanent
+$ sudo firewall -cmd --reload
+
+$ sudo vi /usr/lib/systemd/system/postfix.service
+[Unit]
+Description = Postfix Mail Transport Agent
+After= syslog . target network - online . target ←  network . target を network - online . target に 変 更
+Conflicts = sendmail . service exim. servicae
+
+saslauthd サービスの起動
+SMTP 認証用の saslauthd サービスを起動します。
+$ sudo systemctl start saslauthd
+saslauthd の自動起動設定も行っておきます。
+$ sudo systemctl enable saslauthd
+
+[Dovecot]
+$sudo vi /etc/dovecot/conf.d/10- mail.conf
+
+（略）
+# mail_location = maildir :~/ Maildir
+# mail_location = mbox :~/ mail:INBOX =/ var/mail /%u
+# mail_location = mbox :/ var/mail /%d/%1n/%n:INDEX =/ var/ indexes /%d/%1n/%n
+# <doc/wiki/ MailLocation .txt >
+#
+# mail_location =
+mail_location = mbox :~/ mail:INBOX =/ var/mail /%u ← 上 に あ る 2 番 目 の 例 を 参 考 に 追 加
+（略）
+# Group to enable temporarily for privileged operations . Currently this is
+# used only with INBOX when either its initial creation or dotlocking fails.
+# Typically this is set to "mail" to give access to /var/mail.
+# mail_privileged_group =
+mail_privileged_group = mail ←  権 限 が 必 要 な 動 作 は mail グ ル ー プ と し て 行 う よ う に 追 加
+# Grant access to these supplementary groups for mail processes . Typically
+# these are used to set up access to shared mailboxes . Note that it may be
+# dangerous to set these if users can create symlinks (e.g. if "mail" group is
+# set here , ln -s /var/mail ~/ mail/var could allow a user to delete others '
+# mailboxes , or ln -s / secret / shared /box ~/ mail/mybox would allow reading it).
+# mail_access_groups =
+mail_access_groups = mail ← mail グ ル ー プ に ア ク セ ス 権 限 を 与 え る よ う に 追 加
+
+$sudo vi /etc/dovecot/conf.d/10- auth.conf
+
+認証を設定するファイルです。
+今回は暗号化していない平文での認証を許可します。
+$ sudo vi /etc/ dovecot /conf.d/10- auth.conf
+##
+## Authentication processes
+##
+# Disable LOGIN command and all other plaintext authentications unless
+# SSL/TLS is used ( LOGINDISABLED capability ). Note that if the remote IP
+# matches the local IP (ie. you 're connecting from the same computer ), the
+# connection is considered secure and plaintext authentication is allowed .
+# See also ssl= required setting .
+# disable_plaintext_auth = yes
+disable_plaintext_auth = no ← no に 変 更
+
+$sudo vi /etc/dovecot/conf.d/10-ssl.conf
+
+##
+## SSL settings
+##
+# SSL/TLS support : yes , no , required . <doc/wiki/SSL.txt >
+# disable plain pop3 and imap , allowed are only pop3+TLS , pop3s , imap+TLS and imaps
+# plain imap and pop3 are still allowed for local connections
+ssl = no ← required を no に 変 更
+
+$ sudo systemctl start dovecot
+$ sudo systemctl enable dovecot
+$ sudo firewall -cmd --add - service =imap --zone= public --permanent
+$ sudo firewall -cmd --reload
+
