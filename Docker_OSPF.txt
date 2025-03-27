@@ -6,7 +6,6 @@ OSPFの設定を行うため、DockerコンテナにはFRRがインストール�
 
 1. Docker Composeファイル例
 
-version: "3.8"
 services:
   r1:
     container_name: r1
