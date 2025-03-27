@@ -2,4 +2,6 @@
 
 comドメインサーバーとexample1,example2という２つのサブドメインがあることを想定したconfig作成例
 
+それぞれのサブドメインコンテンツサーバではWordpress, NextCloudをインストールしている想定
+
 検証用Docker-Composeファイル等
