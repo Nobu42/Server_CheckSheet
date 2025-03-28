@@ -20,10 +20,6 @@ inoremap (<Enter> ()<Left><CR><ESC><S-o>
 inoremap ' ''<Left>
 inoremap " ""<Left>
 inoremap [ []<Left>
-inoremap <C-h> <Left>
-inoremap <C-j> <Down>
-inoremap <C-k> <Up>
-inoremap <C-l> <Right>
 
 set cindent
 set wildmenu
